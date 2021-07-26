@@ -7,4 +7,5 @@ class Travelposts(db.Model):
     country=db.Column(db.String)
     state=db.Column(db.String)
     days=db.Column(db.ARRAY(JSON))
+    likes=db.Column(db.Integer)
     

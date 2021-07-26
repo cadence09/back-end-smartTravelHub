@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response
 from app import db;
+from sqlalchemy import asc, desc
 from .models.travel_posts import Travelposts;
 import json 
 
@@ -9,6 +10,7 @@ travel_posts_bp=Blueprint("travel_posts", __name__,url_prefix="/travelposts")
 def handle_travel_posts():
     if request.method=="GET":
         travelposts = Travelposts.query.all()
+        travelposts= Travelposts.query.order_by(desc(Travelposts.likes))
         travelposts_response = []
         for post in travelposts:
             travelposts_response.append({
@@ -16,20 +18,21 @@ def handle_travel_posts():
                     "title": post.title,
                     "country": post.country,
                     "state": post.state,
-                    "days": [json.loads(day)for day in post.days] 
-            })
+                    "days": [json.loads(day)for day in post.days],
+                    "likes":post.likes
+            })   
         return jsonify(travelposts_response)
     if request.method=="POST":
         request_body=request.get_json()
-        print("request_body",request_body)
         if "title" not in request_body or "country" not in request_body or "state" not in request_body or "days"not in request_body:
             return  {"detal": "Invalid data"} ,400
         new_travel_post = Travelposts(
                             title = request_body["title"],
                             country= request_body["country"],
                             state= request_body["state"],
-                            days= request_body["days"])
-
+                            days= request_body["days"],
+                            likes=request_body["likes"]
+                           )
         db.session.add(new_travel_post)
         db.session.commit()
 
@@ -38,12 +41,13 @@ def handle_travel_posts():
                 "id":new_travel_post.id,
                 "title":new_travel_post.title,
                 "state":new_travel_post.state,
-                "days":new_travel_post.days
+                "days":new_travel_post.days,
+                "likes":new_travel_post
             }
         },201
 
 
-@travel_posts_bp.route("/<id>",methods=["GET"])
+@travel_posts_bp.route("/<id>",methods=["GET","PATCH"])
 def get_post_by_same_id(id):
     if request.method=="GET":
         posts= Travelposts.query.filter(Travelposts.id==id)
@@ -54,16 +58,17 @@ def get_post_by_same_id(id):
                  "title":post.title,
                  "country":post.country,
                  "state":post.state,
-                 "days":[json.loads(day)for day in post.days] 
+                 "days":[json.loads(day)for day in post.days],
+                 "likes":post.likes
             })
-        print("result",result)
-        # return make_response(
-        #     {
-        #         "id":result.id,
-        #         "title":result.title,
-        #          "country":result.country,
-        #          "state":result.state,
-        #          "days":[json.loads(day)for day in result.days] 
-        #     },200
-        # )
+     
+      
         return make_response(jsonify(result))
+    
+    if request.method == "PATCH":
+       travel_post=Travelposts.query.get(id)
+       request_body=request.get_json()
+       travel_post.likes=request_body["likes_count"]
+       db.session.commit()
+       
+       return {"likes count": "updated"},201
