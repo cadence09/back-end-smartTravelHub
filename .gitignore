@@ -1,0 +1,7 @@
+
+.vscode
+.DS_Store
+
+#Environments
+.env
+venv/
