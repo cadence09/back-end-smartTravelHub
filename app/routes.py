@@ -72,3 +72,27 @@ def get_post_by_same_id(id):
        db.session.commit()
        
        return {"likes count": "updated"},201
+
+@travel_posts_bp.route("/search/<val>",methods=["GET"])
+def handle_search_post(val):
+    print("sear val",val)
+    
+    if request.method == "GET":
+        travelposts= Travelposts.query.all()
+        travelposts= Travelposts.query.order_by(desc(Travelposts.likes))
+        filtered_post_response=[]
+        for post in travelposts:
+            if post.country == val or post.state == val:
+                  filtered_post_response.append({
+                    "id": post.id,
+                    "title": post.title,
+                    "country": post.country,
+                    "state": post.state,
+                    "days": [json.loads(day)for day in post.days],
+                    "likes":post.likes
+            })
+        if len(filtered_post_response) == 0:
+            filtered_post_response={"result":"No Result"}
+        print("filter",filtered_post_response)
+
+    return jsonify(filtered_post_response)
